@@ -1,0 +1,59 @@
+name: Terraform AWS Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+jobs:
+  terraform:
+    name: "Terraform Plan & Apply"
+    runs-on: ubuntu-latest
+
+    env:
+      TF_CLI_ARGS_init: "-upgrade"
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------ AWS AUTH USING OIDC (RECOMMENDED) ------
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/<GITHUB_OIDC_ROLE>
+
+      # ------ INSTALL TERRAFORM ------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      # ------ TERRAFORM INIT ------
+      - name: Terraform Init
+        run: terraform init
+
+      # ------ TERRAFORM FORMAT CHECK ------
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      # ------ TERRAFORM VALIDATE ------
+      - name: Terraform Validate
+        run: terraform validate
+
+      # ------ TERRAFORM PLAN ------
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      # ------ APPLY ONLY ON MAIN PUSH -------
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
