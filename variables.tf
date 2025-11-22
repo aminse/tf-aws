@@ -7,5 +7,5 @@ variable "aws_region" {
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string
-  default     = "tf-bucket"
+  default     = "tf-bucket-amin-v1.0"
 }
